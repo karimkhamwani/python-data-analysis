@@ -6,7 +6,7 @@ import ipaddress
 
 
 # look if value is missing?
-def isMissingValue(value):
+def valueExists(value):
     if(type(value) == float):
         return 0      
     else:
@@ -14,7 +14,6 @@ def isMissingValue(value):
 
 # valided ip address
 def validateIpAddress(ip):
-    if(isMissingValue(ip)): return 0
     try:
         ipaddress.ip_address(ip)
         return 1
@@ -30,12 +29,6 @@ def validateEmail(email):
     except:
         return 0
 
-# check if value is mising then value will be nan
-def getNameScore(name):
-    if(type(name) == float):
-        return 0
-    else:
-        return 1
 
 pd.options.display.max_columns = None
 pd.options.display.width=None
@@ -46,8 +39,6 @@ accounts_csv = pd.read_csv('./account_log_without_labels.csv')
 
 
 accounts_csv = accounts_csv.head(2)
-
-print(validateIpAddress('170.45.171.112'))
 
 #steps
 # 1 - convert categorical data into numeric
@@ -63,11 +54,15 @@ print(validateIpAddress('170.45.171.112'))
 
 #loop over csv
 for index in accounts_csv.index:
-    # print(index)
+    print(index)
     email = accounts_csv['email'][index]
     name = accounts_csv['name'][index]
-    accounts_csv.loc[index, 'emailScore'] = validateEmail(email)
-    accounts_csv.loc[index, 'nameScore'] = getNameScore(name)
+    location = accounts_csv['location'][index]
+    ipAddress = accounts_csv['ip_address'][index]
+
+    accounts_csv.loc[index, 'emailScore'] = valueExists(email) * validateEmail(email)
+    accounts_csv.loc[index, 'nameScore'] = valueExists(name)
+    accounts_csv.loc[index, 'geographyScore'] = valueExists(location) * validateIpAddress(ipAddress)
 
 
 print(accounts_csv)
