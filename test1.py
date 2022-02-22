@@ -60,10 +60,12 @@ for index in accounts_csv.index:
     location = accounts_csv['location'][index]
     ipAddress = accounts_csv['ip_address'][index]
 
+    accounts_csv.loc[index, 'city'] = location.split(',')[0]  if valueExists(location) else ''
     accounts_csv.loc[index, 'emailScore'] = valueExists(email) * validateEmail(email)
     accounts_csv.loc[index, 'nameScore'] = valueExists(name)
     accounts_csv.loc[index, 'geographyScore'] = valueExists(location) * validateIpAddress(ipAddress)
-
-
-print(accounts_csv)
-# print(accounts_csv["email"].value_counts())
+    percentage = ((accounts_csv.loc[index, 'emailScore'] +     accounts_csv.loc[index, 'nameScore'] +     accounts_csv.loc[index, 'geographyScore']) / 3) * 100
+    accounts_csv.loc[index, 'isRealUser'] = str(round(percentage, 2)) + '%' 
+    accounts_csv.loc[index, 'fraud'] = False if percentage > 80 else  True
+    
+accounts_csv.to_csv('test.csv', sep='\t')
