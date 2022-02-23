@@ -68,4 +68,4 @@ for index in accounts_csv.index:
     accounts_csv.loc[index, 'isRealUser'] = str(round(percentage, 2)) + '%' 
     accounts_csv.loc[index, 'fraud'] = False if percentage > 80 else  True
     
-accounts_csv.to_csv('test.csv', sep='\t')
+accounts_csv.to_csv('test.csv')
