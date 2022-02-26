@@ -40,7 +40,7 @@ pd.options.display.max_rows = None
 accounts_csv = pd.read_csv("./account_log_without_labels.csv")
 
 
-# accounts_csv = accounts_csv.head(2)
+# accounts_csv = accounts_csv.head(500)
 
 # steps
 # 1 - convert categorical data into numeric
@@ -50,34 +50,47 @@ accounts_csv = pd.read_csv("./account_log_without_labels.csv")
 
 # Rules ( final values for score would be between 1 or 0 )
 # email score : valid or fake email address
-# name score : if name is missing
 # geography score : if location not exists and fake ip address
-
+# duplication score : if more than one account is created with same email and same account name
 
 # loop over csv
 for index in accounts_csv.index:
     print(index)
     email = accounts_csv["email"][index]
     name = accounts_csv["name"][index]
+    account = accounts_csv["account"][index]
     location = accounts_csv["location"][index]
     ipAddress = accounts_csv["ip_address"][index]
-
     accounts_csv.loc[index, "city"] = (
         location.split(",")[0] if valueExists(location) else ""
     )
     accounts_csv.loc[index, "emailScore"] = valueExists(email) * validateEmail(email)
-    accounts_csv.loc[index, "nameScore"] = valueExists(name)
-    accounts_csv.loc[index, "geographyScore"] = valueExists(
-        location
-    ) * validateIpAddress(ipAddress)
+    accounts_csv.loc[index, "systemAuthenticityScore"] = validateIpAddress(ipAddress)
+    accounts_csv.loc[index, "duplicationScore"] = (
+        0
+        if (
+            (accounts_csv["email"] == email).sum() > 1
+            and (accounts_csv["account"] == account).sum() > 1
+        )
+        else 1
+    )
     percentage = (
         (
             accounts_csv.loc[index, "emailScore"]
-            + accounts_csv.loc[index, "geographyScore"]
+            + accounts_csv.loc[index, "systemAuthenticityScore"]
+            + accounts_csv.loc[index, "duplicationScore"]
         )
-        / 2
+        / 3
     ) * 100
-    accounts_csv.loc[index, "isRealUser"] = str(round(percentage, 2)) + "%"
-    accounts_csv.loc[index, "fraud"] = False if percentage > 80 else True
+    accounts_csv.loc[index, "isRealUser"] = round(percentage, 2)
+    realityScore = accounts_csv.loc[index, "isRealUser"]
+    accounts_csv.loc[index, "campaign"] = (
+        "legit"
+        if realityScore > 80
+        else "warriors"
+        if realityScore >= 50 and realityScore <= 80
+        else "fighters"
+    )
+    accounts_csv.loc[index, "meticulous_account"] = False if percentage > 80 else True
 
 accounts_csv.to_csv("test.csv")
