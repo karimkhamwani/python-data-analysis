@@ -40,7 +40,7 @@ pd.options.display.max_rows = None
 accounts_csv = pd.read_csv("./account_log_without_labels.csv")
 
 
-# accounts_csv = accounts_csv.head(500)
+# accounts_csv = accounts_csv.head(2)
 
 # steps
 # 1 - convert categorical data into numeric
@@ -84,6 +84,7 @@ for index in accounts_csv.index:
     ) * 100
     accounts_csv.loc[index, "isRealUser"] = round(percentage, 2)
     realityScore = accounts_csv.loc[index, "isRealUser"]
+    accounts_csv.loc[index, "malicious_account"] = False if percentage > 80 else True
     accounts_csv.loc[index, "campaign"] = (
         "legit"
         if realityScore > 80
@@ -91,6 +92,5 @@ for index in accounts_csv.index:
         if realityScore >= 50 and realityScore <= 80
         else "fighters"
     )
-    accounts_csv.loc[index, "meticulous_account"] = False if percentage > 80 else True
 
 accounts_csv.to_csv("test.csv")
