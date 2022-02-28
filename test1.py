@@ -3,6 +3,7 @@ import re
 import numpy as np
 from email_validator import validate_email
 import ipaddress
+import re
 
 
 # look if value is missing?
@@ -40,13 +41,13 @@ pd.options.display.max_rows = None
 accounts_csv = pd.read_csv("./account_log_without_labels.csv")
 
 
-# accounts_csv = accounts_csv.head(2)
+# accounts_csv = accounts_csv.head(10)
 
 # steps
 # 1 - convert categorical data into numeric
 # 2 - add new column in df for each categorical data
-# 3 - sum the score to determine fraud or not.
-# 4 - assign each some a campagine
+# 3 - sum the score and divide bby total number of senecrios considered
+# 4 - assign each row with campagine and macilious value
 
 # Rules ( final values for score would be between 1 or 0 )
 # email score : valid or fake email address
@@ -66,6 +67,9 @@ for index in accounts_csv.index:
     )
     accounts_csv.loc[index, "emailScore"] = valueExists(email) * validateEmail(email)
     accounts_csv.loc[index, "systemAuthenticityScore"] = validateIpAddress(ipAddress)
+    accounts_csv.loc[index, "botScore"] = (
+        0 if (account == name and str(re.search(account, email)) != "None") else 1
+    )
     accounts_csv.loc[index, "duplicationScore"] = (
         0
         if (
@@ -79,8 +83,9 @@ for index in accounts_csv.index:
             accounts_csv.loc[index, "emailScore"]
             + accounts_csv.loc[index, "systemAuthenticityScore"]
             + accounts_csv.loc[index, "duplicationScore"]
+            + accounts_csv.loc[index, "botScore"]
         )
-        / 3
+        / 4
     ) * 100
     accounts_csv.loc[index, "isRealUser"] = round(percentage, 2)
     realityScore = accounts_csv.loc[index, "isRealUser"]
