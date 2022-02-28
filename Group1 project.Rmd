@@ -1,0 +1,133 @@
+```{r}
+library(ggplot2)
+library(stringr)
+library(tidyr)
+library(dplyr)
+library(gridExtra)
+library(caret)
+library(pROC)
+library(psych)
+library(moments)
+library(tidyverse)
+library(rjson)
+library(rgeolocate)
+```
+
+
+```{r}
+account <- read.csv(file.choose(), stringsAsFactors = TRUE)
+#1. find missing value
+#2. guess what is malcious mail account
+#3. visualize
+```
+
+```{r}
+options(max.print=100000)
+```
+
+```{r}
+acc.df <- as.data.frame(account)
+head(acc.df)
+```
+
+
+```{r}
+str(acc.df)
+```
+```{r}
+summary(acc.df)
+# duplicated data (in account, email, ip address, name, location) -> suspect malicious_account
+# how to treat missing data
+
+```
+```{r}
+file <- system.file("extdata","GeoLite2-City.mmdb", package = "rgeolocate")
+results <- maxmind(acc.df$ip_address, file, c("city_name"))
+acc.df$City <- results
+head(acc.df, 20)
+```
+
+
+The first step is to verify malicious accounts that the email has a valid format.
+```{r}
+isValidEmail <- function(x) {
+    grepl("\\<[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\>", as.character(x), ignore.case=TRUE)
+}
+
+```
+
+If the email has a valid format, export the TRUE value or FALSE value.
+```{r}
+emailvalidate <- isValidEmail(acc.df$email)
+acc.df$email_score <- emailvalidate
+head(acc.df,10)
+
+```
+
+This is the number of emails with invalid formats.
+```{r}
+sum(acc.df$email_score == 0)
+```
+
+Check how much missing value(blank cell) in the data.
+```{r}
+sum(acc.df == "")
+# total blank data = 738
+```
+
+Convert missing value into NA
+```{r}
+acc.df[acc.df == ""] <- NA
+```
+
+Check whether the missing values have changed properly and how much NA in the ip_address.
+```{r}
+sum(is.na(acc.df)) # total NA 
+sum(is.na(acc.df$ip_address)) # number of NA in ip_address
+```
+
+If the value of the ip_address is NA, export TRUE, otherwise FALSE.
+```{r}
+ipnacheck <- is.na(acc.df$ip_address)
+acc.df$systemAuthenticityScore <- ipnacheck
+```
+
+Check  how much FALSE in the systemAuthenticityScore.
+```{r}
+sum(acc.df$systemAuthenticityScore == 1)
+```
+
+If there is duplicated data, Only one of the two (data located below) is FALSE. Depending on summary, duplicated data in email was 10, so only 5 email addresses are detected as duplicated
+```{r}
+dup <- duplicated(acc.df$email)
+acc.df$duplicationScore <- dup
+```
+
+
+```{r}
+ggplot(acc.df, aes(x = email_score, fill = email_score))+ 
+  geom_bar(stat="count", width=0.7)
+
+ggplot(acc.df, aes(x = systemAuthenticityScore, fill = systemAuthenticityScore))+ 
+  geom_bar(stat="count", width=0.7)
+
+ggplot(acc.df, aes(x = duplicationScore, fill = duplicationScore))+ 
+  geom_bar(stat="count", width=0.7)
+```
+
+When email_score is TRUE, systemAuthenticityScore and duplicationScore are FALSE, account is accounts are considered appropriate.
+```{r}
+acc.df2 <- transform(acc.df, legit_account = email_score & !systemAuthenticityScore & !duplicationScore)
+acc.df2
+```
+
+```{r}
+ggplot(acc.df2, aes(x = legit_account, fill = legit_account))+ 
+  geom_bar(stat="count", width=0.7)
+```
+
+
+
+```{r}
+write.csv(acc.df, file = "test1.csv")
+```
