@@ -70,6 +70,8 @@ for index in accounts_csv.index:
     accounts_csv.loc[index, "botScore"] = (
         0 if (account == name and str(re.search(account, email)) != "None") else 1
     )
+    # look if more than one account is created with same email and account name,
+    # bcz it doesnt make any sense 1 person creating two accounts?
     accounts_csv.loc[index, "duplicationScore"] = (
         0
         if (
